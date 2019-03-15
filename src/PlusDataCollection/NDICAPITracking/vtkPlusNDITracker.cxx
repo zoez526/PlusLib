@@ -528,7 +528,7 @@ PlusStatus vtkPlusNDITracker::InternalUpdate()
       continue;
     }
 
-    float ndiTransform[8] = {1, 0, 0, 0, 0, 0, 0, 0};
+    float ndiTransform[8] = { 1, 0, 0, 0, 0, 0, 0, 0 };
     int ndiToolAbsent = ndiGetBXTransform(this->Device, portHandle, ndiTransform);
     int ndiPortStatus = ndiGetBXPortStatus(this->Device, portHandle);
     unsigned long ndiFrameIndex = ndiGetBXFrame(this->Device, portHandle);
@@ -569,8 +569,17 @@ PlusStatus vtkPlusNDITracker::InternalUpdate()
         this->LastFrameNumber = ndiFrameIndex;
       }
     }
-
-    // send the matrix and status to the tool's vtkPlusDataBuffer
+    // -----------Added to write the toolTimestamps to csv-----------
+    std::ofstream RequestTimeStamps;
+    RequestTimeStamps.open("ReceivingTimeStamps.csv", std::ofstream::app);
+    if (toolFrameNumber == 0) {
+      RequestTimeStamps << "toolFrameNumber,toolTimestamp,\n";
+    }
+    // To estimate the transmission delay of NDI tracker
+    RequestTimeStamps << std::to_string(toolFrameNumber) + "," + std::to_string(toolTimestamp) + ",\n";
+    RequestTimeStamps.close();
+    // -----------------------------------------------------------------
+      // send the matrix and status to the tool's vtkPlusDataBuffer
     this->ToolTimeStampedUpdate(toolSourceId.c_str(), toolToTrackerTransform, toolFlags, toolFrameNumber, toolTimestamp);
   }
 
@@ -584,6 +593,7 @@ PlusStatus vtkPlusNDITracker::InternalUpdate()
 
   return PLUS_SUCCESS;
 }
+
 
 //----------------------------------------------------------------------------
 PlusStatus vtkPlusNDITracker::ReadSromFromFile(NdiToolDescriptor& toolDescriptor, const char* filename)

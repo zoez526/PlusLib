@@ -1356,10 +1356,13 @@ void* vtkPlusDevice::vtkDataCaptureThread(vtkMultiThreader::ThreadInfo* data)
   vtkPlusDevice* self = (vtkPlusDevice*)(data->UserData);
 
   double rate = self->GetAcquisitionRate();
-  double currtime[FRAME_RATE_AVERAGING] = {0};
+  double currtime[FRAME_RATE_AVERAGING] = { 0 };
   unsigned long updatecount = 0;
   self->ThreadAlive = true;
-
+  std::ofstream RequestTimeStamps;
+  RequestTimeStamps.open("RequestTimeStamps.csv", std::ofstream::app);
+  RequestTimeStamps << "UpdateCount,RequestTimeStamp,\n";
+  RequestTimeStamps.close();
   while (self->IsRecording() && self->GetCorrectlyConfigured())
   {
     double newtime = vtkIGSIOAccurateTimer::GetSystemTime();
@@ -1379,7 +1382,16 @@ void* vtkPlusDevice::vtkDataCaptureThread(vtkMultiThreader::ThreadInfo* data)
         // recording has been stopped
         break;
       }
+      // -----------Added to write the RequestTimestamps to csv-----------
+      // To estimate the transmission delay of NDI tracker
+      RequestTimeStamps.open("RequestTimeStamps.csv", std::ofstream::app);
+      double currTimestamp = vtkIGSIOAccurateTimer::GetSystemTime();
+      // -----------------------------------------------------------------
       self->InternalUpdate();
+      // -----------Added to write the RequestTimestamps to csv-----------
+      RequestTimeStamps << std::to_string(updatecount) + "," + std::to_string(currTimestamp) + ",\n";
+      RequestTimeStamps.close();
+      // -----------------------------------------------------------------
       self->UpdateTime.Modified();
     }
 
